@@ -11,7 +11,6 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const storage = firebase.storage();
 
 // --- MAP INITIALIZATION ---
 const santaMariaCoords = [34.9530, -120.4357];
@@ -21,15 +20,20 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// Marker icons
-const dangerIcon = L.icon({
-  iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/26a0.svg',
-  iconSize: [38, 38], iconAnchor: [19, 38]
-});
-const crashIcon = L.icon({
-  iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f698.svg',
-  iconSize: [38, 38], iconAnchor: [19, 38]
-});
+// Rotatable marker icon using SVG wrapper
+function getRotatedIcon(type, rotationDeg = 0) {
+  const iconUrl = type === 'danger'
+    ? 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/26a0.svg'
+    : 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f698.svg';
+  return L.divIcon({
+    className: "",
+    html: `<div style="transform:rotate(${rotationDeg}deg);width:38px;height:38px;display:flex;align-items:center;justify-content:center;">
+             <img src="${iconUrl}" style="width:38px;height:38px;">
+           </div>`,
+    iconSize: [38, 38],
+    iconAnchor: [19, 38]
+  });
+}
 
 let mode = null; // null | 'danger' | 'crash'
 let dragMarker = null;
@@ -38,99 +42,127 @@ let markerLayers = {}; // Firebase marker key -> Leaflet Marker
 const dangerBtn = document.getElementById('dangerModeBtn');
 const crashBtn = document.getElementById('crashModeBtn');
 const cancelBtn = document.getElementById('cancelModeBtn');
-const markerImageInput = document.getElementById('markerImageInput');
-const doneMarkerBtn = document.getElementById('doneMarkerBtn');
 
-let pendingMarkerData = null;
-let pendingImageFile = null;
+let deviceHeading = 0; // Default to 0 if unavailable
+let watchPositionId = null;
+let headingListenerActive = false;
 
+// --- Device Orientation Setup ---
+function setupDeviceOrientationListener() {
+  if (headingListenerActive) return;
+  headingListenerActive = true;
+
+  function handleDeviceOrientation(event) {
+    if (typeof event.alpha === 'number') {
+      // Use alpha as compass heading (0=N, 90=E, 180=S, 270=W)
+      deviceHeading = 360 - event.alpha;
+    }
+  }
+
+  if (window.DeviceOrientationEvent && typeof window.DeviceOrientationEvent.requestPermission === 'function') {
+    // iOS 13+ requires permission
+    window.DeviceOrientationEvent.requestPermission()
+      .then(response => {
+        if (response === 'granted') {
+          window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
+          window.addEventListener('deviceorientation', handleDeviceOrientation, true);
+        }
+      }).catch(console.error);
+  } else {
+    window.addEventListener('deviceorientationabsolute', handleDeviceOrientation, true);
+    window.addEventListener('deviceorientation', handleDeviceOrientation, true);
+  }
+}
+
+// --- UI BUTTONS FOR ADDING MARKERS ---
 function enterMode(selectedType) {
   mode = selectedType;
   dangerBtn.disabled = crashBtn.disabled = true;
   cancelBtn.style.display = '';
+
   if (dragMarker) {
     map.removeLayer(dragMarker);
     dragMarker = null;
   }
 
-  map.once('click', (e) => {
-    let icon = mode === 'danger' ? dangerIcon : crashIcon;
-    dragMarker = L.marker(e.latlng, {icon, draggable: true, autoPan: true}).addTo(map);
-    dragMarker.bindPopup("Drag to the correct spot and enter details.").openPopup();
+  setupDeviceOrientationListener();
 
-    let prompted = false;
+  // Get real-time user location and heading
+  if ("geolocation" in navigator) {
+    let latestLatLng = null;
+    let latestHeading = deviceHeading;
 
-    async function promptAndPrepareMarker() {
-      if (prompted) return;
-      prompted = true;
-      dragMarker.closePopup();
+    function updateMarkerPosition(pos) {
+      latestLatLng = [pos.coords.latitude, pos.coords.longitude];
+      map.setView(latestLatLng, 17, { animate: true });
 
-      let description = prompt('Short description (optional):');
-      if (description === null) { exitMode(); return; }
-      let user = prompt('Your name or nickname (optional):');
-      if (user === null) { exitMode(); return; }
-
-      // Prepare marker data for Done button
-      pendingMarkerData = {
-        latlng: dragMarker.getLatLng(),
-        type: mode,
-        description: description || "",
-        user: user || "",
-        timestamp: new Date().toISOString()
-      };
-
-      // Reset file state
-      markerImageInput.value = "";
-      pendingImageFile = null;
-      markerImageInput.onchange = function () {
-        pendingImageFile = markerImageInput.files[0] || null;
-      };
-
-      // Show Done button IMMEDIATELY (at all times while editing)
-      doneMarkerBtn.style.display = "";
-      doneMarkerBtn.disabled = false;
-      doneMarkerBtn.onclick = publishPendingMarker;
-
-      // Open file picker (optional)
-      setTimeout(() => markerImageInput.click(), 100);
+      if (!dragMarker) {
+        dragMarker = L.marker(latestLatLng, {
+          icon: getRotatedIcon(mode, latestHeading),
+          draggable: false,
+          autoPan: true
+        }).addTo(map);
+        dragMarker.bindPopup("Your live location. Tap 'Cancel' to stop and save.").openPopup();
+      } else {
+        dragMarker.setLatLng(latestLatLng);
+      }
+      // Always update icon rotation to latest heading
+      dragMarker.setIcon(getRotatedIcon(mode, latestHeading));
     }
 
-    dragMarker.on('dragend', promptAndPrepareMarker);
-    setTimeout(promptAndPrepareMarker, 500);
-  });
-}
+    // Watch position and update marker in real-time
+    watchPositionId = navigator.geolocation.watchPosition(
+      updateMarkerPosition,
+      (err) => {
+        alert("Couldn't get your position. Please allow location access.");
+        exitMode();
+      },
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
+    );
 
-async function publishPendingMarker() {
-  doneMarkerBtn.disabled = true;
-  let marker = {...pendingMarkerData};
-  let imageUrl = "";
-
-  // Upload image if selected
-  if (pendingImageFile) {
-    try {
-      const storageRef = storage.ref();
-      const imageRef = storageRef.child('markerImages/' + Date.now() + '_' + pendingImageFile.name);
-      await imageRef.put(pendingImageFile);
-      imageUrl = await imageRef.getDownloadURL();
-    } catch (e) {
-      alert("Image upload failed. Saving marker without image.");
+    // Also update marker heading in real-time
+    function updateMarkerHeading() {
+      latestHeading = deviceHeading;
+      if (dragMarker) {
+        dragMarker.setIcon(getRotatedIcon(mode, latestHeading));
+      }
+      requestAnimationFrame(updateMarkerHeading);
     }
+    updateMarkerHeading();
+
+    // When user cancels, prompt for info and save
+    cancelBtn.onclick = function() {
+      // Stop watching location
+      if (watchPositionId !== null) {
+        navigator.geolocation.clearWatch(watchPositionId);
+        watchPositionId = null;
+      }
+      // Prompt for info and save if marker exists
+      if (dragMarker && latestLatLng) {
+        let description = prompt('Short description (optional):');
+        if (description === null) { exitMode(); return; } // User cancelled
+        let user = prompt('Your name or nickname (optional):');
+        if (user === null) { exitMode(); return; } // User cancelled
+
+        let timestamp = new Date().toISOString();
+        let marker = {
+          lat: latestLatLng[0],
+          lng: latestLatLng[1],
+          type: mode,
+          description: description || '',
+          user: user || '',
+          heading: latestHeading,
+          timestamp
+        };
+        addMarkerToFirebase(marker);
+      }
+      exitMode();
+    };
+
+  } else {
+    alert("Geolocation not available on this device/browser.");
+    exitMode();
   }
-
-  marker.imageUrl = imageUrl;
-  marker.lat = marker.latlng.lat;
-  marker.lng = marker.latlng.lng;
-  delete marker.latlng;
-
-  addMarkerToFirebase(marker);
-  exitMode();
-
-  // Reset
-  pendingMarkerData = null;
-  pendingImageFile = null;
-  doneMarkerBtn.style.display = "none";
-  doneMarkerBtn.onclick = null;
-  doneMarkerBtn.disabled = false;
 }
 
 function exitMode() {
@@ -141,9 +173,11 @@ function exitMode() {
     map.removeLayer(dragMarker);
     dragMarker = null;
   }
-  doneMarkerBtn.style.display = "none";
-  pendingMarkerData = null;
-  pendingImageFile = null;
+  if (watchPositionId !== null) {
+    navigator.geolocation.clearWatch(watchPositionId);
+    watchPositionId = null;
+  }
+  cancelBtn.onclick = exitMode;
 }
 
 // --- FIREBASE FUNCTIONS ---
@@ -172,17 +206,16 @@ function fmtDate(iso) {
   return d.toLocaleString();
 }
 
-function addMarkerToMap({lat, lng, type, description, user, timestamp, imageUrl}) {
-  let icon = type === 'danger' ? dangerIcon : crashIcon;
+function addMarkerToMap({lat, lng, type, description, user, heading, timestamp}) {
+  let rotation = typeof heading === 'number' ? heading : 0;
+  let icon = getRotatedIcon(type, rotation);
   let label = type === 'danger' ? '⚠️ Danger' : '🚗 Crash';
   let html = `<b>${label}</b><br>`;
-  if (imageUrl) html += `<img src="${imageUrl}" alt="Marker image" style="max-width:120px;max-height:120px;display:block;margin:6px auto;">`;
   if (description) html += `<i>${description}</i><br>`;
   if (user) html += `By: <b>${user}</b><br>`;
   if (timestamp) html += `<span style="font-size:0.85em;color:gray;">${fmtDate(timestamp)}</span>`;
-  return L.marker([lat, lng], {icon})
-    .addTo(map)
-    .bindPopup(html);
+  if (typeof heading === 'number') html += `<br><span style="font-size:0.8em;color:gray;">Heading: ${Math.round(rotation)}°</span>`;
+  return L.marker([lat, lng], {icon}).addTo(map).bindPopup(html);
 }
 
 // --- UI EVENTS ---

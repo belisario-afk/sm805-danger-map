@@ -9,22 +9,21 @@
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 </head>
 <body>
   <h1>Santa Maria (805) Danger/Crash Map</h1>
-  <p>Tap <b>Danger</b> or <b>Crash</b>, then tap the map (and drag the icon if needed).<br>Markers are shared live between all users.</p>
+  <p>
+    Tap <b>Danger</b> or <b>Crash</b>.<br>
+    A marker will follow your live location and heading.<br>
+    When you're ready to save the marker, tap "Cancel" and fill out the info.
+  </p>
   <div class="marker-btn-row">
     <button id="dangerModeBtn" class="danger">Danger ⚠️</button>
     <button id="crashModeBtn" class="crash">Crash 🚗</button>
     <button id="cancelModeBtn" style="display:none;">Cancel</button>
   </div>
   <div id="map"></div>
-  <div class="marker-actions">
-    <button id="clearMarkers">Clear All Markers</button>
-    <button id="doneMarkerBtn" style="display:none;">Done</button>
-  </div>
-  <input type="file" accept="image/*" id="markerImageInput" style="display:none">
+  <button id="clearMarkers">Clear All Markers</button>
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="script.js"></script>
 </body>

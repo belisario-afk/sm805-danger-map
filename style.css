@@ -32,13 +32,6 @@ h1 {
   touch-action: none;
 }
 
-.marker-actions {
-  display: flex;
-  justify-content: center;
-  gap: 1em;
-  margin-bottom: 1em;
-}
-
 button {
   margin: 0.5rem;
   padding: 0.9em 1.5em;
@@ -66,25 +59,12 @@ button.crash:hover {
   background: #b71c1c;
 }
 
-#doneMarkerBtn {
-  background: #4caf50;
-  color: #fff;
-  font-size: 1.1em;
-  padding: 0.9em 1.5em;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
-#doneMarkerBtn:hover { background: #357a38; }
-
 @media (max-width: 600px) {
   #map {
     height: 55vh;
     width: 99vw;
   }
-  .marker-btn-row button, .marker-actions button {
+  .marker-btn-row button {
     font-size: 1.0em;
     min-width: 90px;
   }
