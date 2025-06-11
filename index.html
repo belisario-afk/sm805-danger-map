@@ -15,15 +15,17 @@
     <img src="https://static.thenounproject.com/png/4419605-200.png" class="polar-bear" alt="Polar Bear" />
     <h1>Coca-Cola Polar Bear<br>Ice Map</h1>
   </div>
+  <div id="weatherBar" class="weather-bar">Loading weather...</div>
   <p>
     Tap <b>Ice Cube</b> or <b>Iceberg</b>.<br>
     A marker will follow your live location and heading.<br>
-    When you're ready to save the marker, tap "DONE" and fill out the info.
+    When you're ready to save the marker, tap "<b>Done</b>" and fill out the info.<br>
+    <span style="font-size:0.9em;">Leave a comment on each marker!</span>
   </p>
   <div class="marker-btn-row">
     <button id="dangerModeBtn" class="icecube">Ice Cube 🧊</button>
     <button id="crashModeBtn" class="iceberg">Iceberg 🧊</button>
-    <button id="DoneModeBtn" style="display:none;">Done</button>
+    <button id="cancelModeBtn" style="display:none;">Done</button>
   </div>
   <div id="map"></div>
   <button id="recenterBtn" title="Recenter map to your position" style="display:none;">
