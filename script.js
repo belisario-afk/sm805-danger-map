@@ -161,7 +161,7 @@ listenToMarkers();
 // Clear markers button (password protected)
 document.getElementById('clearMarkers').onclick = () => {
   const password = prompt('Enter admin password to clear all markers:');
-  if (password === 'YOUR_PASSWORD_HERE') { // CHANGE THIS PASSWORD!
+  if (password === 'YOURPASSWORDHERE') { // CHANGE THIS PASSWORD!
     if (confirm('Remove all markers?')) {
       removeAllMarkersFromFirebase();
     }
