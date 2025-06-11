@@ -1,17 +1,14 @@
 // --- FIREBASE CONFIGURATION ---
-// Using your provided config, corrected for static usage!
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyBZpC4zW0PJymXXpJdnlZhn2BLuYk9iT-U",
   authDomain: "santa-maria-ca.firebaseapp.com",
-  databaseURL: "https://santa-maria-ca-default-rtdb.firebaseio.com", // <-- REQUIRED for Realtime Database
   projectId: "santa-maria-ca",
-  storageBucket: "santa-maria-ca.appspot.com", // fixed typo
+  storageBucket: "santa-maria-ca.firebasestorage.app",
   messagingSenderId: "22571427607",
   appId: "1:22571427607:web:a02a7ebf84e8695facf952",
   measurementId: "G-SZLE94KPP8"
 };
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
 
 // --- MAP INITIALIZATION ---
 const santaMariaCoords = [34.9530, -120.4357];
