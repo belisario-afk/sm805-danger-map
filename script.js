@@ -20,28 +20,29 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-// Rotatable marker icon using SVG wrapper
+// Rotatable marker icon using emoji
 function getRotatedIcon(type, rotationDeg = 0) {
-  const iconUrl = type === 'danger'
-    ? 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/26a0.svg'
-    : 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f698.svg';
+  // Ice cube for 'icecube', iceberg for 'iceberg'
+  const emoji = (type === 'icecube')
+    ? '🧊'
+    : '🧊'; // You can swap this for a custom iceberg SVG or emoji if desired
+  // Optionally use SVG for iceberg, but emoji is easiest for demo
   return L.divIcon({
     className: "",
-    html: `<div style="transform:rotate(${rotationDeg}deg);width:38px;height:38px;display:flex;align-items:center;justify-content:center;">
-             <img src="${iconUrl}" style="width:38px;height:38px;">
-           </div>`,
+    html: `<div style="transform:rotate(${rotationDeg}deg);font-size:2.2em;line-height:1;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">${emoji}</div>`,
     iconSize: [38, 38],
     iconAnchor: [19, 38]
   });
 }
 
-let mode = null; // null | 'danger' | 'crash'
+let mode = null; // null | 'icecube' | 'iceberg'
 let dragMarker = null;
 let markerLayers = {}; // Firebase marker key -> Leaflet Marker
 
 const dangerBtn = document.getElementById('dangerModeBtn');
 const crashBtn = document.getElementById('crashModeBtn');
 const cancelBtn = document.getElementById('cancelModeBtn');
+const recenterBtn = document.getElementById('recenterBtn');
 
 let deviceHeading = 0; // Default to 0 if unavailable
 let watchPositionId = null;
@@ -79,6 +80,7 @@ function enterMode(selectedType) {
   mode = selectedType;
   dangerBtn.disabled = crashBtn.disabled = true;
   cancelBtn.style.display = '';
+  recenterBtn.style.display = '';
 
   if (dragMarker) {
     map.removeLayer(dragMarker);
@@ -91,11 +93,14 @@ function enterMode(selectedType) {
   if ("geolocation" in navigator) {
     let latestLatLng = null;
     let latestHeading = deviceHeading;
+    let firstLocationUpdate = true;
 
     function updateMarkerPosition(pos) {
       latestLatLng = [pos.coords.latitude, pos.coords.longitude];
-      map.setView(latestLatLng, 17, { animate: true });
-
+      if (firstLocationUpdate) {
+        map.setView(latestLatLng, 17, { animate: true });
+        firstLocationUpdate = false;
+      }
       if (!dragMarker) {
         dragMarker = L.marker(latestLatLng, {
           icon: getRotatedIcon(mode, latestHeading),
@@ -106,7 +111,6 @@ function enterMode(selectedType) {
       } else {
         dragMarker.setLatLng(latestLatLng);
       }
-      // Always update icon rotation to latest heading
       dragMarker.setIcon(getRotatedIcon(mode, latestHeading));
     }
 
@@ -129,6 +133,13 @@ function enterMode(selectedType) {
       requestAnimationFrame(updateMarkerHeading);
     }
     updateMarkerHeading();
+
+    // Recenter button: center map on marker's current position
+    recenterBtn.onclick = function() {
+      if (dragMarker && dragMarker.getLatLng) {
+        map.setView(dragMarker.getLatLng(), map.getZoom(), { animate: true });
+      }
+    };
 
     // When user cancels, prompt for info and save
     cancelBtn.onclick = function() {
@@ -169,6 +180,7 @@ function exitMode() {
   mode = null;
   dangerBtn.disabled = crashBtn.disabled = false;
   cancelBtn.style.display = 'none';
+  recenterBtn.style.display = 'none';
   if (dragMarker) {
     map.removeLayer(dragMarker);
     dragMarker = null;
@@ -178,6 +190,7 @@ function exitMode() {
     watchPositionId = null;
   }
   cancelBtn.onclick = exitMode;
+  recenterBtn.onclick = null;
 }
 
 // --- FIREBASE FUNCTIONS ---
@@ -209,7 +222,7 @@ function fmtDate(iso) {
 function addMarkerToMap({lat, lng, type, description, user, heading, timestamp}) {
   let rotation = typeof heading === 'number' ? heading : 0;
   let icon = getRotatedIcon(type, rotation);
-  let label = type === 'danger' ? '⚠️ Danger' : '🚗 Crash';
+  let label = type === 'icecube' ? '🧊 Ice Cube' : '🧊 Iceberg';
   let html = `<b>${label}</b><br>`;
   if (description) html += `<i>${description}</i><br>`;
   if (user) html += `By: <b>${user}</b><br>`;
@@ -221,15 +234,15 @@ function addMarkerToMap({lat, lng, type, description, user, heading, timestamp})
                 || (navigator.userAgent.includes('Macintosh') && 'ontouchend' in document);
   let mapLink = '';
   if (isIOS) {
-    mapLink = `<a href="https://maps.apple.com/?q=${lat},${lng}" target="_blank">View in Apple Maps</a>`;
+    mapLink = `<a href="https://maps.apple.com/?q=${lat},${lng}" target="_blank" style="color:#1976d2">View in Apple Maps</a>`;
   } else {
-    mapLink = `<a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank">View in Google Maps</a>`;
+    mapLink = `<a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" style="color:#1976d2">View in Google Maps</a>`;
   }
 
   // Add a copy coordinates button
   const coordsString = `${lat},${lng}`;
   html += `<br>${mapLink}`;
-  html += `<br><button onclick="copyCoordsToClipboard('${coordsString}')" style="margin-top:4px;">Copy coordinates</button>`;
+  html += `<br><button onclick="copyCoordsToClipboard('${coordsString}')" style="margin-top:4px;background:#e41c23;color:#fff;border:none;border-radius:7px;padding:5px 14px;cursor:pointer;font-size:1em;">Copy coordinates</button>`;
 
   return L.marker([lat, lng], {icon}).addTo(map).bindPopup(html);
 }
@@ -273,9 +286,10 @@ function showToast(message) {
 }
 
 // --- UI EVENTS ---
-dangerBtn.onclick = () => enterMode('danger');
-crashBtn.onclick = () => enterMode('crash');
+dangerBtn.onclick = () => enterMode('icecube');
+crashBtn.onclick = () => enterMode('iceberg');
 cancelBtn.onclick = exitMode;
+recenterBtn.onclick = null; // will be set in enterMode()
 
 // Listen to markers in Firebase and update map live
 listenToMarkers();

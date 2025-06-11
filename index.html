@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Santa Maria (805) Danger/Crash Map</title>
+  <title>Polar Bear Ice Map</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
   <!-- Firebase SDKs -->
@@ -11,18 +11,31 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 </head>
 <body>
-  <h1>Santa Maria (805) Danger/Crash Map</h1>
+  <div class="polar-header">
+    <img src="https://static.thenounproject.com/png/4419605-200.png" class="polar-bear" alt="Polar Bear" />
+    <h1>Coca-Cola Polar Bear<br>Ice Map</h1>
+  </div>
   <p>
-    Tap <b>Danger</b> or <b>Crash</b>.<br>
+    Tap <b>Ice Cube</b> or <b>Iceberg</b>.<br>
     A marker will follow your live location and heading.<br>
     When you're ready to save the marker, tap "Cancel" and fill out the info.
   </p>
   <div class="marker-btn-row">
-    <button id="dangerModeBtn" class="danger">Danger ⚠️</button>
-    <button id="crashModeBtn" class="crash">Crash 🚗</button>
+    <button id="dangerModeBtn" class="icecube">Ice Cube 🧊</button>
+    <button id="crashModeBtn" class="iceberg">Iceberg 🧊</button>
     <button id="cancelModeBtn" style="display:none;">Cancel</button>
   </div>
   <div id="map"></div>
+  <button id="recenterBtn" title="Recenter map to your position" style="display:none;">
+    <svg width="28" height="28" viewBox="0 0 24 24" style="vertical-align:middle;">
+      <circle cx="12" cy="12" r="10" stroke="#e41c23" stroke-width="2" fill="none"/>
+      <circle cx="12" cy="12" r="2" fill="#e41c23"/>
+      <line x1="12" y1="2" x2="12" y2="6" stroke="#e41c23" stroke-width="2"/>
+      <line x1="12" y1="18" x2="12" y2="22" stroke="#e41c23" stroke-width="2"/>
+      <line x1="2" y1="12" x2="6" y2="12" stroke="#e41c23" stroke-width="2"/>
+      <line x1="18" y1="12" x2="22" y2="12" stroke="#e41c23" stroke-width="2"/>
+    </svg>
+  </button>
   <button id="clearMarkers">Clear All Markers</button>
   <div id="toast"></div>
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
