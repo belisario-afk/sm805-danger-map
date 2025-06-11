@@ -70,16 +70,6 @@ function enterMode(selectedType) {
       let user = prompt('Your name or nickname (optional):');
       if (user === null) { exitMode(); return; }
 
-      // Ask for image (optional)
-      markerImageInput.value = "";
-      pendingImageFile = null;
-      markerImageInput.onchange = function () {
-        pendingImageFile = markerImageInput.files[0] || null;
-      };
-
-      // Show file picker dialog (optional)
-      setTimeout(() => markerImageInput.click(), 100);
-
       // Prepare marker data for Done button
       pendingMarkerData = {
         latlng: dragMarker.getLatLng(),
@@ -89,15 +79,33 @@ function enterMode(selectedType) {
         timestamp: new Date().toISOString()
       };
 
-      // Show Done button
-      doneMarkerBtn.style.display = "";
-      doneMarkerBtn.disabled = false;
-      doneMarkerBtn.onclick = publishPendingMarker;
+      // Reset file state
+      markerImageInput.value = "";
+      pendingImageFile = null;
+
+      // When user selects file (or cancels), show "Done" button
+      markerImageInput.onchange = function () {
+        pendingImageFile = markerImageInput.files[0] || null;
+        showDoneButton();
+      };
+      markerImageInput.onblur = function () {
+        // If user cancels file picker (no file), show "Done" button anyway (with no image)
+        setTimeout(showDoneButton, 200);
+      };
+
+      // Open file picker (optional image)
+      setTimeout(() => markerImageInput.click(), 100);
     }
 
     dragMarker.on('dragend', promptAndPrepareMarker);
     setTimeout(promptAndPrepareMarker, 500);
   });
+}
+
+function showDoneButton() {
+  doneMarkerBtn.style.display = "";
+  doneMarkerBtn.disabled = false;
+  doneMarkerBtn.onclick = publishPendingMarker;
 }
 
 async function publishPendingMarker() {
