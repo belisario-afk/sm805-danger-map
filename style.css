@@ -154,52 +154,7 @@ button.iceberg:hover {
   opacity: 1;
 }
 
-/* Photo upload form */
-#photoUploadForm {
-  background: #fff;
-  color: #1976d2;
-  margin: 0 auto 1em auto;
-  padding: 0.7em 1.2em;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  max-width: 320px;
-  box-shadow: 0 2px 12px #e41c2360;
-  font-size: 1em;
-}
-#photoUploadForm label {
-  font-weight: bold;
-  margin-bottom: 0.3em;
-}
-#photoUploadForm input[type="file"] {
-  margin-bottom: 0.35em;
-}
-#photoUploadStatus {
-  font-size: 0.96em;
-  color: #e41c23;
-  margin-top: 0.3em;
-}
-#photoUploadForm button[type="submit"] {
-  background: #e41c23;
-  color: #fff;
-  margin-right: 0.6em;
-}
-#photoUploadForm button#skipPhotoBtn {
-  background: #51b8df;
-  color: #fff;
-}
-
-.popup-photo-thumb {
-  display: block;
-  margin: 0.2em auto 0.3em auto;
-  max-width: 137px;
-  max-height: 92px;
-  border-radius: 7px;
-  border: 2px solid #51b8df;
-  box-shadow: 0 2px 8px #1976d260;
-}
-
+/* Comments */
 .popup-comments-list {
   text-align: left;
   font-size: 0.97em;
@@ -257,8 +212,5 @@ button.iceberg:hover {
     top: 90px;
     width: 44px;
     height: 44px;
-  }
-  #photoUploadForm {
-    max-width: 95vw;
   }
 }

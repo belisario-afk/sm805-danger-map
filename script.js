@@ -11,7 +11,6 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-const storage = firebase.storage();
 
 // --- WEATHER BAR ---
 const weatherBar = document.getElementById('weatherBar');
@@ -66,39 +65,6 @@ const crashBtn = document.getElementById('crashModeBtn');
 const cancelBtn = document.getElementById('cancelModeBtn');
 const recenterBtn = document.getElementById('recenterBtn');
 
-// --- PHOTO UPLOAD ---
-const photoForm = document.getElementById("photoUploadForm");
-const photoInput = document.getElementById("markerPhoto");
-const skipPhotoBtn = document.getElementById("skipPhotoBtn");
-const photoStatus = document.getElementById("photoUploadStatus");
-let pendingPhotoMarkerKey = null;
-let pendingPhotoFile = null;
-
-photoInput.onchange = () => {
-  pendingPhotoFile = photoInput.files && photoInput.files[0];
-};
-photoForm.onsubmit = async function(e) {
-  e.preventDefault();
-  if (!pendingPhotoMarkerKey || !pendingPhotoFile) return;
-  photoStatus.textContent = "Uploading...";
-  try {
-    const photoRef = storage.ref('markerPhotos/' + pendingPhotoMarkerKey + '/' + pendingPhotoFile.name);
-    await photoRef.put(pendingPhotoFile);
-    const url = await photoRef.getDownloadURL();
-    await db.ref('markers/' + pendingPhotoMarkerKey).update({ photoUrl: url });
-    photoStatus.textContent = "Photo uploaded!";
-    photoForm.style.display = "none";
-    pendingPhotoMarkerKey = null; pendingPhotoFile = null;
-  } catch (e) {
-    photoStatus.textContent = "Upload failed";
-  }
-};
-skipPhotoBtn.onclick = () => {
-  photoForm.style.display = "none";
-  pendingPhotoMarkerKey = null;
-  pendingPhotoFile = null;
-};
-
 // --- Device Orientation Setup ---
 let deviceHeading = 0;
 let watchPositionId = null;
@@ -134,7 +100,6 @@ function enterMode(selectedType) {
   dangerBtn.disabled = crashBtn.disabled = true;
   cancelBtn.style.display = '';
   recenterBtn.style.display = '';
-  photoForm.style.display = "none";
 
   if (dragMarker) {
     map.removeLayer(dragMarker);
@@ -197,7 +162,7 @@ function enterMode(selectedType) {
       }
     };
 
-    // When user cancels, prompt for info, save, and show photo upload
+    // When user cancels, prompt for info, save
     cancelBtn.onclick = async function() {
       // Stop watching location
       if (watchPositionId !== null) {
@@ -219,12 +184,8 @@ function enterMode(selectedType) {
           heading: latestHeading,
           timestamp
         };
-        // Add to Firebase, then show photo upload form
-        const newRef = await db.ref('markers').push(marker);
-        pendingPhotoMarkerKey = newRef.key;
-        photoInput.value = "";
-        photoForm.style.display = "flex";
-        photoStatus.textContent = "";
+        // Add to Firebase
+        await db.ref('markers').push(marker);
       }
       exitMode();
     };
@@ -280,7 +241,7 @@ function fmtDate(iso) {
 }
 
 function addMarkerToMap(markerData, markerKey) {
-  let {lat, lng, type, description, user, heading, timestamp, photoUrl} = markerData;
+  let {lat, lng, type, description, user, heading, timestamp} = markerData;
   let rotation = typeof heading === 'number' ? heading : 0;
   let icon = getRotatedIcon(type, rotation);
   let label = type === 'icecube' ? '🧊 Ice Cube' : '🧊 Iceberg';
@@ -291,9 +252,6 @@ function addMarkerToMap(markerData, markerKey) {
   if (user) html += `By: <b>${user}</b><br>`;
   if (timestamp) html += `<span style="font-size:0.85em;color:gray;">${fmtDate(timestamp)}</span>`;
   if (typeof heading === 'number') html += `<br><span style="font-size:0.8em;color:gray;">Heading: ${Math.round(rotation)}°</span>`;
-  if (photoUrl) {
-    html += `<br><img class="popup-photo-thumb" src="${photoUrl}" alt="Photo" />`;
-  }
   // Map links
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
                 || (navigator.userAgent.includes('Macintosh') && 'ontouchend' in document);
