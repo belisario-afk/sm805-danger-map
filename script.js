@@ -11,6 +11,7 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+const storage = firebase.storage();
 
 // --- MAP INITIALIZATION ---
 const santaMariaCoords = [34.9530, -120.4357];
@@ -37,8 +38,8 @@ let markerLayers = {}; // Firebase marker key -> Leaflet Marker
 const dangerBtn = document.getElementById('dangerModeBtn');
 const crashBtn = document.getElementById('crashModeBtn');
 const cancelBtn = document.getElementById('cancelModeBtn');
+const markerImageInput = document.getElementById('markerImageInput');
 
-// --- UI BUTTONS FOR ADDING MARKERS ---
 function enterMode(selectedType) {
   mode = selectedType;
   dangerBtn.disabled = crashBtn.disabled = true;
@@ -55,32 +56,49 @@ function enterMode(selectedType) {
 
     let prompted = false;
 
-    function promptAndSaveMarker() {
+    async function promptAndSaveMarker() {
       if (prompted) return; // Prevent multiple prompts
       prompted = true;
       dragMarker.closePopup();
 
       let description = prompt('Short description (optional):');
-      if (description === null) { exitMode(); return; } // User cancelled
+      if (description === null) { exitMode(); return; }
       let user = prompt('Your name or nickname (optional):');
-      if (user === null) { exitMode(); return; } // User cancelled
+      if (user === null) { exitMode(); return; }
 
-      const latlng = dragMarker.getLatLng();
-      let timestamp = new Date().toISOString();
-      let marker = {
-        lat: latlng.lat,
-        lng: latlng.lng,
-        type: mode,
-        description: description || '',
-        user: user || '',
-        timestamp
+      // Ask for image
+      markerImageInput.value = ""; // Clear any previous selection
+
+      markerImageInput.onchange = async function () {
+        let imageUrl = "";
+        if (markerImageInput.files && markerImageInput.files[0]) {
+          const file = markerImageInput.files[0];
+          const storageRef = storage.ref();
+          const imageRef = storageRef.child('markerImages/' + Date.now() + '_' + file.name);
+          try {
+            await imageRef.put(file);
+            imageUrl = await imageRef.getDownloadURL();
+          } catch (e) {
+            alert("Image upload failed. Saving marker without image.");
+          }
+        }
+        saveMarkerToFirebase(description, user, imageUrl);
       };
-      addMarkerToFirebase(marker);
-      exitMode();
+
+      // Show file picker
+      markerImageInput.click();
+
+      // If user cancels file picker, still save marker (without image)
+      markerImageInput.onblur = function () {
+        setTimeout(() => {
+          if (!markerImageInput.value) {
+            saveMarkerToFirebase(description, user, "");
+          }
+        }, 500);
+      };
     }
 
     dragMarker.on('dragend', promptAndSaveMarker);
-    // If user doesn't drag, prompt after short delay
     setTimeout(promptAndSaveMarker, 500);
   });
 }
@@ -93,6 +111,23 @@ function exitMode() {
     map.removeLayer(dragMarker);
     dragMarker = null;
   }
+}
+
+function saveMarkerToFirebase(description, user, imageUrl) {
+  if (!dragMarker) return;
+  const latlng = dragMarker.getLatLng();
+  let timestamp = new Date().toISOString();
+  let marker = {
+    lat: latlng.lat,
+    lng: latlng.lng,
+    type: mode,
+    description: description || '',
+    user: user || '',
+    timestamp,
+    imageUrl: imageUrl || ''
+  };
+  addMarkerToFirebase(marker);
+  exitMode();
 }
 
 // --- FIREBASE FUNCTIONS ---
@@ -121,10 +156,11 @@ function fmtDate(iso) {
   return d.toLocaleString();
 }
 
-function addMarkerToMap({lat, lng, type, description, user, timestamp}) {
+function addMarkerToMap({lat, lng, type, description, user, timestamp, imageUrl}) {
   let icon = type === 'danger' ? dangerIcon : crashIcon;
   let label = type === 'danger' ? '⚠️ Danger' : '🚗 Crash';
   let html = `<b>${label}</b><br>`;
+  if (imageUrl) html += `<img src="${imageUrl}" alt="Marker image" style="max-width:120px;max-height:120px;display:block;margin:6px auto;">`;
   if (description) html += `<i>${description}</i><br>`;
   if (user) html += `By: <b>${user}</b><br>`;
   if (timestamp) html += `<span style="font-size:0.85em;color:gray;">${fmtDate(timestamp)}</span>`;
