@@ -20,9 +20,11 @@
     <button id="cancelModeBtn" style="display:none;">Cancel</button>
   </div>
   <div id="map"></div>
-  <button id="clearMarkers">Clear All Markers</button>
+  <div class="marker-actions">
+    <button id="clearMarkers">Clear All Markers</button>
+    <button id="doneMarkerBtn" style="display:none;">Done</button>
+  </div>
   <input type="file" accept="image/*" id="markerImageInput" style="display:none">
-  <button id="doneMarkerBtn" style="display:none;">Done</button>
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="script.js"></script>
 </body>
