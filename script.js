@@ -1,29 +1,17 @@
 // --- FIREBASE CONFIGURATION ---
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+// Using your provided config, with a fixed storageBucket and databaseURL!
 const firebaseConfig = {
   apiKey: "AIzaSyBZpC4zW0PJymXXpJdnlZhn2BLuYk9iT-U",
   authDomain: "santa-maria-ca.firebaseapp.com",
+  databaseURL: "https://santa-maria-ca-default-rtdb.firebaseio.com", // <-- REQUIRED for Realtime Database
   projectId: "santa-maria-ca",
-  storageBucket: "santa-maria-ca.firebasestorage.app",
+  storageBucket: "santa-maria-ca.appspot.com", // <-- fixed typo: use .appspot.com
   messagingSenderId: "22571427607",
   appId: "1:22571427607:web:a02a7ebf84e8695facf952",
   measurementId: "G-SZLE94KPP8"
 };
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
 // --- MAP INITIALIZATION ---
 const santaMariaCoords = [34.9530, -120.4357];
