@@ -59,6 +59,20 @@ button.crash:hover {
   background: #b71c1c;
 }
 
+#doneMarkerBtn {
+  background: #4caf50;
+  color: #fff;
+  position: fixed;
+  left: 50%;
+  bottom: 30px;
+  transform: translateX(-50%);
+  z-index: 2000;
+  font-size: 1.2em;
+  padding: 1em 2em;
+  display: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+}
+
 @media (max-width: 600px) {
   #map {
     height: 55vh;

@@ -1,6 +1,48 @@
-// ... Firebase config/initialization and map setup remain the same ...
+// --- FIREBASE CONFIGURATION ---
+const firebaseConfig = {
+  apiKey: "AIzaSyBZpC4zW0PJymXXpJdnlZhn2BLuYk9iT-U",
+  authDomain: "santa-maria-ca.firebaseapp.com",
+  databaseURL: "https://santa-maria-ca-default-rtdb.firebaseio.com",
+  projectId: "santa-maria-ca",
+  storageBucket: "santa-maria-ca.appspot.com",
+  messagingSenderId: "22571427607",
+  appId: "1:22571427607:web:a02a7ebf84e8695facf952",
+  measurementId: "G-SZLE94KPP8"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+const storage = firebase.storage();
 
+// --- MAP INITIALIZATION ---
+const santaMariaCoords = [34.9530, -120.4357];
+const map = L.map('map').setView(santaMariaCoords, 12);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors'
+}).addTo(map);
+
+// Marker icons
+const dangerIcon = L.icon({
+  iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/26a0.svg',
+  iconSize: [38, 38], iconAnchor: [19, 38]
+});
+const crashIcon = L.icon({
+  iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f698.svg',
+  iconSize: [38, 38], iconAnchor: [19, 38]
+});
+
+let mode = null; // null | 'danger' | 'crash'
+let dragMarker = null;
+let markerLayers = {}; // Firebase marker key -> Leaflet Marker
+
+const dangerBtn = document.getElementById('dangerModeBtn');
+const crashBtn = document.getElementById('crashModeBtn');
+const cancelBtn = document.getElementById('cancelModeBtn');
 const markerImageInput = document.getElementById('markerImageInput');
+const doneMarkerBtn = document.getElementById('doneMarkerBtn');
+
+let pendingMarkerData = null;
+let pendingImageFile = null;
 
 function enterMode(selectedType) {
   mode = selectedType;
@@ -18,7 +60,7 @@ function enterMode(selectedType) {
 
     let prompted = false;
 
-    async function promptAndSaveMarker() {
+    async function promptAndPrepareMarker() {
       if (prompted) return;
       prompted = true;
       dragMarker.closePopup();
@@ -28,43 +70,146 @@ function enterMode(selectedType) {
       let user = prompt('Your name or nickname (optional):');
       if (user === null) { exitMode(); return; }
 
-      // Ask if the user wants to add an image
-      if (confirm("Do you want to add a photo? (optional)")) {
-        markerImageInput.value = ""; // Clear previous selection
-        markerImageInput.onchange = async function () {
-          let imageUrl = "";
-          if (markerImageInput.files && markerImageInput.files[0]) {
-            const file = markerImageInput.files[0];
-            const storageRef = storage.ref();
-            const imageRef = storageRef.child('markerImages/' + Date.now() + '_' + file.name);
-            try {
-              await imageRef.put(file);
-              imageUrl = await imageRef.getDownloadURL();
-            } catch (e) {
-              alert("Image upload failed. Saving marker without image.");
-            }
-          }
-          saveMarkerToFirebase(description, user, imageUrl);
-        };
-        markerImageInput.click();
+      // Ask for image (optional)
+      markerImageInput.value = "";
+      pendingImageFile = null;
+      markerImageInput.onchange = function () {
+        pendingImageFile = markerImageInput.files[0] || null;
+      };
 
-        // If user cancels file picker, still save marker (without image)
-        markerImageInput.onblur = function () {
-          setTimeout(() => {
-            if (!markerImageInput.value) {
-              saveMarkerToFirebase(description, user, "");
-            }
-          }, 500);
-        };
-      } else {
-        // User doesn't want to add image
-        saveMarkerToFirebase(description, user, "");
-      }
+      // Show file picker dialog (optional)
+      setTimeout(() => markerImageInput.click(), 100);
+
+      // Prepare marker data for Done button
+      pendingMarkerData = {
+        latlng: dragMarker.getLatLng(),
+        type: mode,
+        description: description || "",
+        user: user || "",
+        timestamp: new Date().toISOString()
+      };
+
+      // Show Done button
+      doneMarkerBtn.style.display = "";
+      doneMarkerBtn.disabled = false;
+      doneMarkerBtn.onclick = publishPendingMarker;
     }
 
-    dragMarker.on('dragend', promptAndSaveMarker);
-    setTimeout(promptAndSaveMarker, 500);
+    dragMarker.on('dragend', promptAndPrepareMarker);
+    setTimeout(promptAndPrepareMarker, 500);
   });
 }
 
-// ... rest of your code (exitMode, saveMarkerToFirebase, addMarkerToFirebase, etc.) remain unchanged ...
+async function publishPendingMarker() {
+  doneMarkerBtn.disabled = true;
+  let marker = {...pendingMarkerData};
+  let imageUrl = "";
+
+  // Upload image if selected
+  if (pendingImageFile) {
+    try {
+      const storageRef = storage.ref();
+      const imageRef = storageRef.child('markerImages/' + Date.now() + '_' + pendingImageFile.name);
+      await imageRef.put(pendingImageFile);
+      imageUrl = await imageRef.getDownloadURL();
+    } catch (e) {
+      alert("Image upload failed. Saving marker without image.");
+    }
+  }
+
+  marker.imageUrl = imageUrl;
+  marker.lat = marker.latlng.lat;
+  marker.lng = marker.latlng.lng;
+  delete marker.latlng;
+
+  addMarkerToFirebase(marker);
+  exitMode();
+
+  // Reset
+  pendingMarkerData = null;
+  pendingImageFile = null;
+  doneMarkerBtn.style.display = "none";
+  doneMarkerBtn.onclick = null;
+  doneMarkerBtn.disabled = false;
+}
+
+function exitMode() {
+  mode = null;
+  dangerBtn.disabled = crashBtn.disabled = false;
+  cancelBtn.style.display = 'none';
+  if (dragMarker) {
+    map.removeLayer(dragMarker);
+    dragMarker = null;
+  }
+  doneMarkerBtn.style.display = "none";
+  pendingMarkerData = null;
+  pendingImageFile = null;
+}
+
+// --- FIREBASE FUNCTIONS ---
+function addMarkerToFirebase(marker) {
+  db.ref('markers').push(marker);
+}
+
+function removeAllMarkersFromFirebase() {
+  db.ref('markers').remove();
+}
+
+function listenToMarkers() {
+  db.ref('markers').on('value', (snapshot) => {
+    Object.values(markerLayers).forEach(marker => map.removeLayer(marker));
+    markerLayers = {};
+    const markers = snapshot.val() || {};
+    Object.entries(markers).forEach(([key, marker]) => {
+      markerLayers[key] = addMarkerToMap(marker);
+    });
+  });
+}
+
+// --- MAP MARKER DISPLAY ---
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleString();
+}
+
+function addMarkerToMap({lat, lng, type, description, user, timestamp, imageUrl}) {
+  let icon = type === 'danger' ? dangerIcon : crashIcon;
+  let label = type === 'danger' ? '⚠️ Danger' : '🚗 Crash';
+  let html = `<b>${label}</b><br>`;
+  if (imageUrl) html += `<img src="${imageUrl}" alt="Marker image" style="max-width:120px;max-height:120px;display:block;margin:6px auto;">`;
+  if (description) html += `<i>${description}</i><br>`;
+  if (user) html += `By: <b>${user}</b><br>`;
+  if (timestamp) html += `<span style="font-size:0.85em;color:gray;">${fmtDate(timestamp)}</span>`;
+  return L.marker([lat, lng], {icon})
+    .addTo(map)
+    .bindPopup(html);
+}
+
+// --- UI EVENTS ---
+dangerBtn.onclick = () => enterMode('danger');
+crashBtn.onclick = () => enterMode('crash');
+cancelBtn.onclick = exitMode;
+
+// Listen to markers in Firebase and update map live
+listenToMarkers();
+
+// Clear markers button (password protected)
+document.getElementById('clearMarkers').onclick = () => {
+  const password = prompt('Enter admin password to clear all markers:');
+  if (password === 'YOUR_PASSWORD_HERE') { // CHANGE THIS PASSWORD!
+    if (confirm('Remove all markers?')) {
+      removeAllMarkersFromFirebase();
+    }
+  } else if (password !== null) {
+    alert('Incorrect password.');
+  }
+};
+
+// Mobile: Ensure map dragging doesn't compete with scrolling
+map.dragging.enable();
+map.touchZoom.enable();
+map.doubleClickZoom.enable();
+map.scrollWheelZoom.disable(); // Prevent accidental zoom on mobile
+
+// Prevent double marker on accidental double-tap
+map.on('dblclick', (e) => { e.originalEvent.preventDefault(); });
