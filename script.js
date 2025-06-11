@@ -1,14 +1,16 @@
 // --- FIREBASE CONFIGURATION ---
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyBZpC4zW0PJymXXpJdnlZhn2BLuYk9iT-U",
   authDomain: "santa-maria-ca.firebaseapp.com",
+  databaseURL: "https://santa-maria-ca-default-rtdb.firebaseio.com", // REQUIRED!
   projectId: "santa-maria-ca",
-  storageBucket: "santa-maria-ca.firebasestorage.app",
+  storageBucket: "santa-maria-ca.appspot.com", // FIXED typo
   messagingSenderId: "22571427607",
   appId: "1:22571427607:web:a02a7ebf84e8695facf952",
   measurementId: "G-SZLE94KPP8"
 };
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
 // --- MAP INITIALIZATION ---
 const santaMariaCoords = [34.9530, -120.4357];
@@ -82,16 +84,19 @@ function showSaveButton() {
 
   saveBtn.onclick = () => {
     if (!dragMarker) return;
+    // Prompt for info
+    let description = prompt('Short description (optional):');
+    if (description === null) return; // User cancelled
+    let user = prompt('Your name or nickname (optional):');
+    if (user === null) return; // User cancelled
     const latlng = dragMarker.getLatLng();
-    let description = prompt('Short description (optional):') || '';
-    let user = prompt('Your name or nickname (optional):') || '';
     let timestamp = new Date().toISOString();
     let marker = {
       lat: latlng.lat,
       lng: latlng.lng,
       type: mode,
-      description,
-      user,
+      description: description || '',
+      user: user || '',
       timestamp
     };
     addMarkerToFirebase(marker);
@@ -158,7 +163,7 @@ listenToMarkers();
 // Clear markers button (password protected)
 document.getElementById('clearMarkers').onclick = () => {
   const password = prompt('Enter admin password to clear all markers:');
-  if (password === 'YOURPASSWORDHERE') { // CHANGE THIS PASSWORD!
+  if (password === 'YOUR_PASSWORD_HERE') { // CHANGE THIS PASSWORD!
     if (confirm('Remove all markers?')) {
       removeAllMarkersFromFirebase();
     }
