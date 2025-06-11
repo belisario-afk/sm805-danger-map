@@ -1,11 +1,11 @@
 // --- FIREBASE CONFIGURATION ---
-// Using your provided config, with a fixed storageBucket and databaseURL!
+// Using your provided config, corrected for static usage!
 const firebaseConfig = {
   apiKey: "AIzaSyBZpC4zW0PJymXXpJdnlZhn2BLuYk9iT-U",
   authDomain: "santa-maria-ca.firebaseapp.com",
   databaseURL: "https://santa-maria-ca-default-rtdb.firebaseio.com", // <-- REQUIRED for Realtime Database
   projectId: "santa-maria-ca",
-  storageBucket: "santa-maria-ca.appspot.com", // <-- fixed typo: use .appspot.com
+  storageBucket: "santa-maria-ca.appspot.com", // fixed typo
   messagingSenderId: "22571427607",
   appId: "1:22571427607:web:a02a7ebf84e8695facf952",
   measurementId: "G-SZLE94KPP8"
