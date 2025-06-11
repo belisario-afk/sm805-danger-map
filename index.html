@@ -9,22 +9,33 @@
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 </head>
 <body>
   <div class="polar-header">
     <img src="https://static.thenounproject.com/png/4419605-200.png" class="polar-bear" alt="Polar Bear" />
     <h1>Coca-Cola Polar Bear<br>Ice Map</h1>
   </div>
+  <div id="weatherBar" class="weather-bar">Loading weather...</div>
   <p>
     Tap <b>Ice Cube</b> or <b>Iceberg</b>.<br>
     A marker will follow your live location and heading.<br>
-    When you're ready to save the marker, tap "Cancel" and fill out the info.
+    When you're ready to save the marker, tap "Cancel" and fill out the info.<br>
+    <span style="font-size:0.9em;">Upload a photo and leave a comment on each marker!</span>
   </p>
   <div class="marker-btn-row">
     <button id="dangerModeBtn" class="icecube">Ice Cube 🧊</button>
     <button id="crashModeBtn" class="iceberg">Iceberg 🧊</button>
     <button id="cancelModeBtn" style="display:none;">Cancel</button>
   </div>
+  <!-- Photo upload UI, hidden by default, appears on marker save -->
+  <form id="photoUploadForm" style="display:none;" enctype="multipart/form-data">
+    <label for="markerPhoto">Add a photo (optional):</label>
+    <input type="file" id="markerPhoto" name="markerPhoto" accept="image/*" />
+    <button type="submit">Upload Photo</button>
+    <button type="button" id="skipPhotoBtn">Skip</button>
+    <div id="photoUploadStatus"></div>
+  </form>
   <div id="map"></div>
   <button id="recenterBtn" title="Recenter map to your position" style="display:none;">
     <svg width="28" height="28" viewBox="0 0 24 24" style="vertical-align:middle;">

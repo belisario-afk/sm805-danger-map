@@ -32,6 +32,19 @@ h1 {
   line-height: 1.1;
 }
 
+.weather-bar {
+  background: #51b8df;
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.08em;
+  padding: 0.5em 0.6em;
+  margin: 0.4em auto 0.2em auto;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px #e41c2350;
+  max-width: 340px;
+  text-shadow: 0 1px 3px #1976d2;
+}
+
 p {
   color: #fff;
   font-size: 1.08em;
@@ -141,6 +154,95 @@ button.iceberg:hover {
   opacity: 1;
 }
 
+/* Photo upload form */
+#photoUploadForm {
+  background: #fff;
+  color: #1976d2;
+  margin: 0 auto 1em auto;
+  padding: 0.7em 1.2em;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 320px;
+  box-shadow: 0 2px 12px #e41c2360;
+  font-size: 1em;
+}
+#photoUploadForm label {
+  font-weight: bold;
+  margin-bottom: 0.3em;
+}
+#photoUploadForm input[type="file"] {
+  margin-bottom: 0.35em;
+}
+#photoUploadStatus {
+  font-size: 0.96em;
+  color: #e41c23;
+  margin-top: 0.3em;
+}
+#photoUploadForm button[type="submit"] {
+  background: #e41c23;
+  color: #fff;
+  margin-right: 0.6em;
+}
+#photoUploadForm button#skipPhotoBtn {
+  background: #51b8df;
+  color: #fff;
+}
+
+.popup-photo-thumb {
+  display: block;
+  margin: 0.2em auto 0.3em auto;
+  max-width: 137px;
+  max-height: 92px;
+  border-radius: 7px;
+  border: 2px solid #51b8df;
+  box-shadow: 0 2px 8px #1976d260;
+}
+
+.popup-comments-list {
+  text-align: left;
+  font-size: 0.97em;
+  margin: 0.7em 0 0.3em 0;
+  max-height: 80px;
+  overflow-y: auto;
+  padding-left: 0.1em;
+}
+.popup-comments-list strong {
+  color: #e41c23;
+  margin-right: 0.3em;
+}
+.popup-comments-list .marker-comment {
+  margin-bottom: 0.1em;
+}
+
+.popup-comment-form {
+  margin-top: 0.2em;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.popup-comment-form input, .popup-comment-form textarea {
+  width: 98%;
+  margin-bottom: 0.18em;
+  padding: 3px 5px;
+  font-size: 0.98em;
+  border-radius: 5px;
+  border: 1px solid #51b8df;
+}
+.popup-comment-form button {
+  background: #e41c23;
+  color: #fff;
+  padding: 0.32em 0.8em;
+  font-size: 0.98em;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+}
+.popup-comment-form button:hover {
+  background: #c20c13;
+}
+
 @media (max-width: 600px) {
   #map {
     height: 55vh;
@@ -155,5 +257,8 @@ button.iceberg:hover {
     top: 90px;
     width: 44px;
     height: 44px;
+  }
+  #photoUploadForm {
+    max-width: 95vw;
   }
 }
