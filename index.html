@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Santa Maria (805) Danger/Crash Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Santa Maria (805) Danger/Crash Map</h1>
+  <p>Click anywhere on the map to mark a <b>Danger</b> or <b>Crash</b> spot.<br>Your marks are saved in your browser.</p>
+  <div id="map"></div>
+  <button id="clearMarkers">Clear All Markers</button>
+
+  <!-- Modal for marker type selection -->
+  <div id="markerModal" class="modal">
+    <div class="modal-content">
+      <h2>Add a marker</h2>
+      <button id="dangerBtn" class="danger">Danger ⚠️</button>
+      <button id="crashBtn" class="crash">Crash 🚗</button>
+      <button id="cancelBtn">Cancel</button>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
