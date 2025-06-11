@@ -50,9 +50,12 @@ function enterMode(selectedType) {
   map.once('click', (e) => {
     let icon = mode === 'danger' ? dangerIcon : crashIcon;
     dragMarker = L.marker(e.latlng, {icon, draggable: true, autoPan: true}).addTo(map);
-    dragMarker.bindPopup("Drag to the correct spot, then tap 'Save' below.").openPopup();
+    dragMarker.bindPopup("Drag to the correct spot, then enter details.").openPopup();
 
-    showSaveButton();
+    // Prompt for info AFTER marker drag ends
+    dragMarker.on('dragend', promptAndSaveMarker);
+    // Immediately open the prompt if user doesn't drag
+    setTimeout(() => promptAndSaveMarker(), 100);
   });
 }
 
@@ -60,71 +63,47 @@ function exitMode() {
   mode = null;
   dangerBtn.disabled = crashBtn.disabled = false;
   cancelBtn.style.display = 'none';
-  hideSaveButton();
   if (dragMarker) {
     map.removeLayer(dragMarker);
     dragMarker = null;
   }
 }
 
-// Create and manage save button for confirming marker placement
-function showSaveButton() {
-  hideSaveButton();
-  const saveBtn = document.createElement('button');
-  saveBtn.textContent = 'Save Marker';
-  saveBtn.id = 'saveMarkBtn';
-  saveBtn.style.background = mode === 'danger' ? '#ff9800' : '#e53935';
-  saveBtn.style.position = 'fixed';
-  saveBtn.style.bottom = '20px';
-  saveBtn.style.left = '50%';
-  saveBtn.style.transform = 'translateX(-50%)';
-  saveBtn.style.zIndex = '1001';
-  saveBtn.style.fontSize = '1.2em';
-  saveBtn.style.padding = '0.9em 2.2em';
+function promptAndSaveMarker() {
+  if (!dragMarker) return;
+  // Remove listener so it doesn't fire again
+  dragMarker.off('dragend', promptAndSaveMarker);
 
-  saveBtn.onclick = () => {
-    if (!dragMarker) return;
-    // Prompt for info
-    let description = prompt('Short description (optional):');
-    if (description === null) return; // User cancelled
-    let user = prompt('Your name or nickname (optional):');
-    if (user === null) return; // User cancelled
-    const latlng = dragMarker.getLatLng();
-    let timestamp = new Date().toISOString();
-    let marker = {
-      lat: latlng.lat,
-      lng: latlng.lng,
-      type: mode,
-      description: description || '',
-      user: user || '',
-      timestamp
-    };
-    addMarkerToFirebase(marker);
-    exitMode();
+  // Prompt for info
+  let description = prompt('Short description (optional):');
+  if (description === null) { exitMode(); return; } // User cancelled
+  let user = prompt('Your name or nickname (optional):');
+  if (user === null) { exitMode(); return; } // User cancelled
+  const latlng = dragMarker.getLatLng();
+  let timestamp = new Date().toISOString();
+  let marker = {
+    lat: latlng.lat,
+    lng: latlng.lng,
+    type: mode,
+    description: description || '',
+    user: user || '',
+    timestamp
   };
-  document.body.appendChild(saveBtn);
-}
-
-function hideSaveButton() {
-  let saveBtn = document.getElementById('saveMarkBtn');
-  if (saveBtn) saveBtn.remove();
+  addMarkerToFirebase(marker);
+  exitMode();
 }
 
 // --- FIREBASE FUNCTIONS ---
-// Add marker to Firebase (shared DB)
 function addMarkerToFirebase(marker) {
   db.ref('markers').push(marker);
 }
 
-// Remove all markers from Firebase (password protected)
 function removeAllMarkersFromFirebase() {
   db.ref('markers').remove();
 }
 
-// Listen for marker data and update the map reactively
 function listenToMarkers() {
   db.ref('markers').on('value', (snapshot) => {
-    // Remove all old markers
     Object.values(markerLayers).forEach(marker => map.removeLayer(marker));
     markerLayers = {};
     const markers = snapshot.val() || {};
