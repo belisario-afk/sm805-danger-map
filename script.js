@@ -82,30 +82,22 @@ function enterMode(selectedType) {
       // Reset file state
       markerImageInput.value = "";
       pendingImageFile = null;
-
-      // When user selects file (or cancels), show "Done" button
       markerImageInput.onchange = function () {
         pendingImageFile = markerImageInput.files[0] || null;
-        showDoneButton();
-      };
-      markerImageInput.onblur = function () {
-        // If user cancels file picker (no file), show "Done" button anyway (with no image)
-        setTimeout(showDoneButton, 200);
       };
 
-      // Open file picker (optional image)
+      // Show Done button IMMEDIATELY (at all times while editing)
+      doneMarkerBtn.style.display = "";
+      doneMarkerBtn.disabled = false;
+      doneMarkerBtn.onclick = publishPendingMarker;
+
+      // Open file picker (optional)
       setTimeout(() => markerImageInput.click(), 100);
     }
 
     dragMarker.on('dragend', promptAndPrepareMarker);
     setTimeout(promptAndPrepareMarker, 500);
   });
-}
-
-function showDoneButton() {
-  doneMarkerBtn.style.display = "";
-  doneMarkerBtn.disabled = false;
-  doneMarkerBtn.onclick = publishPendingMarker;
 }
 
 async function publishPendingMarker() {
