@@ -2,9 +2,9 @@
 const firebaseConfig = {
   apiKey: "AIzaSyBZpC4zW0PJymXXpJdnlZhn2BLuYk9iT-U",
   authDomain: "santa-maria-ca.firebaseapp.com",
-  databaseURL: "https://santa-maria-ca-default-rtdb.firebaseio.com", // REQUIRED!
+  databaseURL: "https://santa-maria-ca-default-rtdb.firebaseio.com",
   projectId: "santa-maria-ca",
-  storageBucket: "santa-maria-ca.appspot.com", // FIXED typo
+  storageBucket: "santa-maria-ca.appspot.com",
   messagingSenderId: "22571427607",
   appId: "1:22571427607:web:a02a7ebf84e8695facf952",
   measurementId: "G-SZLE94KPP8"
@@ -47,15 +47,41 @@ function enterMode(selectedType) {
     map.removeLayer(dragMarker);
     dragMarker = null;
   }
+
   map.once('click', (e) => {
     let icon = mode === 'danger' ? dangerIcon : crashIcon;
     dragMarker = L.marker(e.latlng, {icon, draggable: true, autoPan: true}).addTo(map);
-    dragMarker.bindPopup("Drag to the correct spot, then enter details.").openPopup();
+    dragMarker.bindPopup("Drag to the correct spot and enter details.").openPopup();
 
-    // Prompt for info AFTER marker drag ends
+    let prompted = false;
+
+    function promptAndSaveMarker() {
+      if (prompted) return; // Prevent multiple prompts
+      prompted = true;
+      dragMarker.closePopup();
+
+      let description = prompt('Short description (optional):');
+      if (description === null) { exitMode(); return; } // User cancelled
+      let user = prompt('Your name or nickname (optional):');
+      if (user === null) { exitMode(); return; } // User cancelled
+
+      const latlng = dragMarker.getLatLng();
+      let timestamp = new Date().toISOString();
+      let marker = {
+        lat: latlng.lat,
+        lng: latlng.lng,
+        type: mode,
+        description: description || '',
+        user: user || '',
+        timestamp
+      };
+      addMarkerToFirebase(marker);
+      exitMode();
+    }
+
     dragMarker.on('dragend', promptAndSaveMarker);
-    // Immediately open the prompt if user doesn't drag
-    setTimeout(() => promptAndSaveMarker(), 100);
+    // If user doesn't drag, prompt after short delay
+    setTimeout(promptAndSaveMarker, 500);
   });
 }
 
@@ -67,30 +93,6 @@ function exitMode() {
     map.removeLayer(dragMarker);
     dragMarker = null;
   }
-}
-
-function promptAndSaveMarker() {
-  if (!dragMarker) return;
-  // Remove listener so it doesn't fire again
-  dragMarker.off('dragend', promptAndSaveMarker);
-
-  // Prompt for info
-  let description = prompt('Short description (optional):');
-  if (description === null) { exitMode(); return; } // User cancelled
-  let user = prompt('Your name or nickname (optional):');
-  if (user === null) { exitMode(); return; } // User cancelled
-  const latlng = dragMarker.getLatLng();
-  let timestamp = new Date().toISOString();
-  let marker = {
-    lat: latlng.lat,
-    lng: latlng.lng,
-    type: mode,
-    description: description || '',
-    user: user || '',
-    timestamp
-  };
-  addMarkerToFirebase(marker);
-  exitMode();
 }
 
 // --- FIREBASE FUNCTIONS ---
