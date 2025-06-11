@@ -1,40 +1,27 @@
-// Center on Santa Maria, CA
+// Santa Maria, CA center
 const santaMariaCoords = [34.9530, -120.4357];
 const map = L.map('map').setView(santaMariaCoords, 12);
 
-// Map tiles
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-let pendingLatLng = null;
-
-// Modal logic
-const modal = document.getElementById('markerModal');
-const dangerBtn = document.getElementById('dangerBtn');
-const crashBtn = document.getElementById('crashBtn');
-const cancelBtn = document.getElementById('cancelBtn');
-
-function showModal(latlng) {
-  pendingLatLng = latlng;
-  modal.style.display = 'block';
-}
-function hideModal() {
-  pendingLatLng = null;
-  modal.style.display = 'none';
-}
-
-// Marker icons
 const dangerIcon = L.icon({
   iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/26a0.svg',
-  iconSize: [32, 32], iconAnchor: [16, 32]
+  iconSize: [38, 38], iconAnchor: [19, 38]
 });
 const crashIcon = L.icon({
   iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f698.svg',
-  iconSize: [32, 32], iconAnchor: [16, 32]
+  iconSize: [38, 38], iconAnchor: [19, 38]
 });
 
-// Save/load markers from localStorage
+let mode = null; // null | 'danger' | 'crash'
+let dragMarker = null;
+
+const dangerBtn = document.getElementById('dangerModeBtn');
+const crashBtn = document.getElementById('crashModeBtn');
+const cancelBtn = document.getElementById('cancelModeBtn');
+
 function saveMarkers(markers) {
   localStorage.setItem('sm805_markers', JSON.stringify(markers));
 }
@@ -44,13 +31,11 @@ function loadMarkers() {
   } catch { return []; }
 }
 
-// Format date/time nicely
 function fmtDate(iso) {
   const d = new Date(iso);
   return d.toLocaleString();
 }
 
-// Add marker to map and list
 function addMarkerToMap({lat, lng, type, description, user, timestamp}) {
   let icon = type === 'danger' ? dangerIcon : crashIcon;
   let label = type === 'danger' ? '⚠️ Danger' : '🚗 Crash';
@@ -63,7 +48,6 @@ function addMarkerToMap({lat, lng, type, description, user, timestamp}) {
     .bindPopup(html);
 }
 
-// Notify backend for SMS
 function notifyNewMark(marker) {
   fetch('/.netlify/functions/notify-sms', {
     method: 'POST',
@@ -72,53 +56,85 @@ function notifyNewMark(marker) {
   });
 }
 
-// On map click, show modal
-map.on('click', (e) => {
-  showModal(e.latlng);
-});
+// Enable marker adding mode
+function enterMode(selectedType) {
+  mode = selectedType;
+  dangerBtn.disabled = crashBtn.disabled = true;
+  cancelBtn.style.display = '';
+  if (dragMarker) {
+    map.removeLayer(dragMarker);
+    dragMarker = null;
+  }
+  map.once('click', (e) => {
+    let icon = mode === 'danger' ? dangerIcon : crashIcon;
+    dragMarker = L.marker(e.latlng, {icon, draggable: true, autoPan: true}).addTo(map);
+    dragMarker.bindPopup("Drag to the correct spot, then tap 'Save' below.").openPopup();
 
-function promptForDetails(type) {
-  const description = prompt('Describe this location (danger or crash):');
-  if (description === null) return null;
-  const user = prompt('Your name or nickname (optional):');
-  const timestamp = new Date().toISOString();
-  return { description, user, timestamp };
+    showSaveButton();
+  });
 }
 
-dangerBtn.onclick = () => {
-  if (!pendingLatLng) return;
-  const details = promptForDetails('danger');
-  if (!details) return hideModal();
-  let {lat, lng} = pendingLatLng;
-  let marker = { lat, lng, type: 'danger', ...details };
-  let markers = loadMarkers();
-  markers.push(marker);
-  saveMarkers(markers);
-  addMarkerToMap(marker);
-  notifyNewMark(marker);
-  hideModal();
-};
-crashBtn.onclick = () => {
-  if (!pendingLatLng) return;
-  const details = promptForDetails('crash');
-  if (!details) return hideModal();
-  let {lat, lng} = pendingLatLng;
-  let marker = { lat, lng, type: 'crash', ...details };
-  let markers = loadMarkers();
-  markers.push(marker);
-  saveMarkers(markers);
-  addMarkerToMap(marker);
-  notifyNewMark(marker);
-  hideModal();
-};
-cancelBtn.onclick = hideModal;
+function exitMode() {
+  mode = null;
+  dangerBtn.disabled = crashBtn.disabled = false;
+  cancelBtn.style.display = 'none';
+  hideSaveButton();
+  if (dragMarker) {
+    map.removeLayer(dragMarker);
+    dragMarker = null;
+  }
+}
 
-// Hide modal when clicking outside
-window.onclick = (event) => {
-  if (event.target === modal) hideModal();
-};
+// Create and manage save button for confirming marker placement
+function showSaveButton() {
+  hideSaveButton();
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = 'Save Marker';
+  saveBtn.id = 'saveMarkBtn';
+  saveBtn.style.background = mode === 'danger' ? '#ff9800' : '#e53935';
+  saveBtn.style.position = 'fixed';
+  saveBtn.style.bottom = '20px';
+  saveBtn.style.left = '50%';
+  saveBtn.style.transform = 'translateX(-50%)';
+  saveBtn.style.zIndex = '1001';
+  saveBtn.style.fontSize = '1.2em';
+  saveBtn.style.padding = '0.9em 2.2em';
 
-// Load all markers on startup
+  saveBtn.onclick = () => {
+    if (!dragMarker) return;
+    const latlng = dragMarker.getLatLng();
+    let description = prompt('Short description (optional):') || '';
+    let user = prompt('Your name or nickname (optional):') || '';
+    let timestamp = new Date().toISOString();
+    let marker = {
+      lat: latlng.lat,
+      lng: latlng.lng,
+      type: mode,
+      description,
+      user,
+      timestamp
+    };
+    let markers = loadMarkers();
+    markers.push(marker);
+    saveMarkers(markers);
+    addMarkerToMap(marker);
+    notifyNewMark(marker);
+    exitMode();
+  };
+  document.body.appendChild(saveBtn);
+}
+
+function hideSaveButton() {
+  let saveBtn = document.getElementById('saveMarkBtn');
+  if (saveBtn) saveBtn.remove();
+}
+
+// Button events
+dangerBtn.onclick = () => enterMode('danger');
+crashBtn.onclick = () => enterMode('crash');
+cancelBtn.onclick = exitMode;
+
+// Load markers on startup
 loadMarkers().forEach(addMarkerToMap);
 
 // Clear markers button (password protected)
@@ -135,3 +151,12 @@ document.getElementById('clearMarkers').onclick = () => {
     alert('Incorrect password.');
   }
 };
+
+// Mobile: Ensure map dragging doesn't compete with scrolling
+map.dragging.enable();
+map.touchZoom.enable();
+map.doubleClickZoom.enable();
+map.scrollWheelZoom.disable(); // Prevent accidental zoom on mobile
+
+// Prevent double marker on accidental double-tap
+map.on('dblclick', (e) => { e.originalEvent.preventDefault(); });
