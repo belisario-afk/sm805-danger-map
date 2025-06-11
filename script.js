@@ -114,7 +114,7 @@ function enterMode(selectedType) {
     watchPositionId = navigator.geolocation.watchPosition(
       updateMarkerPosition,
       (err) => {
-        alert("Couldn't get your position. Please allow location access.");
+        showToast("Couldn't get your position. Please allow location access.");
         exitMode();
       },
       { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
@@ -160,7 +160,7 @@ function enterMode(selectedType) {
     };
 
   } else {
-    alert("Geolocation not available on this device/browser.");
+    showToast("Geolocation not available on this device/browser.");
     exitMode();
   }
 }
@@ -215,7 +215,61 @@ function addMarkerToMap({lat, lng, type, description, user, heading, timestamp})
   if (user) html += `By: <b>${user}</b><br>`;
   if (timestamp) html += `<span style="font-size:0.85em;color:gray;">${fmtDate(timestamp)}</span>`;
   if (typeof heading === 'number') html += `<br><span style="font-size:0.8em;color:gray;">Heading: ${Math.round(rotation)}°</span>`;
+
+  // Device detection for Maps links
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+                || (navigator.userAgent.includes('Macintosh') && 'ontouchend' in document);
+  let mapLink = '';
+  if (isIOS) {
+    mapLink = `<a href="https://maps.apple.com/?q=${lat},${lng}" target="_blank">View in Apple Maps</a>`;
+  } else {
+    mapLink = `<a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank">View in Google Maps</a>`;
+  }
+
+  // Add a copy coordinates button
+  const coordsString = `${lat},${lng}`;
+  html += `<br>${mapLink}`;
+  html += `<br><button onclick="copyCoordsToClipboard('${coordsString}')" style="margin-top:4px;">Copy coordinates</button>`;
+
   return L.marker([lat, lng], {icon}).addTo(map).bindPopup(html);
+}
+
+// --- Copy-to-Clipboard & Toast ---
+window.copyCoordsToClipboard = function(coords) {
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(coords).then(() => {
+      showToast('Coordinates copied!');
+    }).catch(() => {
+      fallbackCopyTextToClipboard(coords);
+    });
+  } else {
+    fallbackCopyTextToClipboard(coords);
+  }
+};
+
+function fallbackCopyTextToClipboard(text) {
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  try {
+    document.execCommand('copy');
+    showToast('Coordinates copied!');
+  } catch (err) {
+    showToast('Could not copy coordinates');
+  }
+  document.body.removeChild(textarea);
+}
+
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  toast.textContent = message;
+  toast.className = "show";
+  clearTimeout(window._toastTimeout);
+  window._toastTimeout = setTimeout(() => {
+    toast.className = toast.className.replace("show", "");
+  }, 1800);
 }
 
 // --- UI EVENTS ---
@@ -234,7 +288,7 @@ document.getElementById('clearMarkers').onclick = () => {
       removeAllMarkersFromFirebase();
     }
   } else if (password !== null) {
-    alert('Incorrect password.');
+    showToast('Incorrect password.');
   }
 };
 

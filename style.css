@@ -59,6 +59,28 @@ button.crash:hover {
   background: #b71c1c;
 }
 
+#toast {
+  visibility: hidden;
+  min-width: 160px;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 8px;
+  padding: 14px 22px;
+  position: fixed;
+  left: 50%;
+  bottom: 30px;
+  transform: translateX(-50%);
+  z-index: 9999;
+  font-size: 1em;
+  opacity: 0;
+  transition: opacity 0.3s, visibility 0.3s;
+}
+#toast.show {
+  visibility: visible;
+  opacity: 1;
+}
+
 @media (max-width: 600px) {
   #map {
     height: 55vh;
