@@ -1,4 +1,31 @@
-// Santa Maria, CA center
+// --- FIREBASE CONFIGURATION ---
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyBZpC4zW0PJymXXpJdnlZhn2BLuYk9iT-U",
+  authDomain: "santa-maria-ca.firebaseapp.com",
+  projectId: "santa-maria-ca",
+  storageBucket: "santa-maria-ca.firebasestorage.app",
+  messagingSenderId: "22571427607",
+  appId: "1:22571427607:web:a02a7ebf84e8695facf952",
+  measurementId: "G-SZLE94KPP8"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
+// --- MAP INITIALIZATION ---
 const santaMariaCoords = [34.9530, -120.4357];
 const map = L.map('map').setView(santaMariaCoords, 12);
 
@@ -6,6 +33,7 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
+// Marker icons
 const dangerIcon = L.icon({
   iconUrl: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/26a0.svg',
   iconSize: [38, 38], iconAnchor: [19, 38]
@@ -17,46 +45,13 @@ const crashIcon = L.icon({
 
 let mode = null; // null | 'danger' | 'crash'
 let dragMarker = null;
+let markerLayers = {}; // Firebase marker key -> Leaflet Marker
 
 const dangerBtn = document.getElementById('dangerModeBtn');
 const crashBtn = document.getElementById('crashModeBtn');
 const cancelBtn = document.getElementById('cancelModeBtn');
 
-function saveMarkers(markers) {
-  localStorage.setItem('sm805_markers', JSON.stringify(markers));
-}
-function loadMarkers() {
-  try {
-    return JSON.parse(localStorage.getItem('sm805_markers') || '[]');
-  } catch { return []; }
-}
-
-function fmtDate(iso) {
-  const d = new Date(iso);
-  return d.toLocaleString();
-}
-
-function addMarkerToMap({lat, lng, type, description, user, timestamp}) {
-  let icon = type === 'danger' ? dangerIcon : crashIcon;
-  let label = type === 'danger' ? '⚠️ Danger' : '🚗 Crash';
-  let html = `<b>${label}</b><br>`;
-  if (description) html += `<i>${description}</i><br>`;
-  if (user) html += `By: <b>${user}</b><br>`;
-  if (timestamp) html += `<span style="font-size:0.85em;color:gray;">${fmtDate(timestamp)}</span>`;
-  L.marker([lat, lng], {icon})
-    .addTo(map)
-    .bindPopup(html);
-}
-
-function notifyNewMark(marker) {
-  fetch('/.netlify/functions/notify-sms', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(marker)
-  });
-}
-
-// Enable marker adding mode
+// --- UI BUTTONS FOR ADDING MARKERS ---
 function enterMode(selectedType) {
   mode = selectedType;
   dangerBtn.disabled = crashBtn.disabled = true;
@@ -114,11 +109,7 @@ function showSaveButton() {
       user,
       timestamp
     };
-    let markers = loadMarkers();
-    markers.push(marker);
-    saveMarkers(markers);
-    addMarkerToMap(marker);
-    notifyNewMark(marker);
+    addMarkerToFirebase(marker);
     exitMode();
   };
   document.body.appendChild(saveBtn);
@@ -129,23 +120,62 @@ function hideSaveButton() {
   if (saveBtn) saveBtn.remove();
 }
 
-// Button events
+// --- FIREBASE FUNCTIONS ---
+// Add marker to Firebase (shared DB)
+function addMarkerToFirebase(marker) {
+  db.ref('markers').push(marker);
+}
+
+// Remove all markers from Firebase (password protected)
+function removeAllMarkersFromFirebase() {
+  db.ref('markers').remove();
+}
+
+// Listen for marker data and update the map reactively
+function listenToMarkers() {
+  db.ref('markers').on('value', (snapshot) => {
+    // Remove all old markers
+    Object.values(markerLayers).forEach(marker => map.removeLayer(marker));
+    markerLayers = {};
+    const markers = snapshot.val() || {};
+    Object.entries(markers).forEach(([key, marker]) => {
+      markerLayers[key] = addMarkerToMap(marker);
+    });
+  });
+}
+
+// --- MAP MARKER DISPLAY ---
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleString();
+}
+
+function addMarkerToMap({lat, lng, type, description, user, timestamp}) {
+  let icon = type === 'danger' ? dangerIcon : crashIcon;
+  let label = type === 'danger' ? '⚠️ Danger' : '🚗 Crash';
+  let html = `<b>${label}</b><br>`;
+  if (description) html += `<i>${description}</i><br>`;
+  if (user) html += `By: <b>${user}</b><br>`;
+  if (timestamp) html += `<span style="font-size:0.85em;color:gray;">${fmtDate(timestamp)}</span>`;
+  return L.marker([lat, lng], {icon})
+    .addTo(map)
+    .bindPopup(html);
+}
+
+// --- UI EVENTS ---
 dangerBtn.onclick = () => enterMode('danger');
 crashBtn.onclick = () => enterMode('crash');
 cancelBtn.onclick = exitMode;
 
-// Load markers on startup
-loadMarkers().forEach(addMarkerToMap);
+// Listen to markers in Firebase and update map live
+listenToMarkers();
 
 // Clear markers button (password protected)
 document.getElementById('clearMarkers').onclick = () => {
   const password = prompt('Enter admin password to clear all markers:');
   if (password === 'YOUR_PASSWORD_HERE') { // CHANGE THIS PASSWORD!
     if (confirm('Remove all markers?')) {
-      localStorage.removeItem('sm805_markers');
-      map.eachLayer((layer) => {
-        if (layer instanceof L.Marker) map.removeLayer(layer);
-      });
+      removeAllMarkersFromFirebase();
     }
   } else if (password !== null) {
     alert('Incorrect password.');

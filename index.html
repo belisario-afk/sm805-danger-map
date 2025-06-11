@@ -6,10 +6,13 @@
   <title>Santa Maria (805) Danger/Crash Map</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 </head>
 <body>
   <h1>Santa Maria (805) Danger/Crash Map</h1>
-  <p>Tap <b>Danger</b> or <b>Crash</b>, then drag the icon to the exact spot.<br>Your marks are saved in your browser.</p>
+  <p>Tap <b>Danger</b> or <b>Crash</b>, then drag the icon to the exact spot.<br>Markers are shared live between all users.</p>
   <div class="marker-btn-row">
     <button id="dangerModeBtn" class="danger">Danger ⚠️</button>
     <button id="crashModeBtn" class="crash">Crash 🚗</button>
