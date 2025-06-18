@@ -33,7 +33,35 @@ const translations = {
     copyCoordsFail: "Could not copy coordinates",
     geolocFail: "Couldn't get your position. Please allow location access.",
     geolocNotAvail: "Geolocation not available on this device/browser.",
-    weatherUnavailable: "Weather unavailable"
+    weatherUnavailable: "Weather unavailable",
+    rightsBtn: "📇 Know Your Rights",
+    rightsCard: `
+      <h2>📇 KNOW YOUR CONSTITUTIONAL RIGHTS</h2>
+      <div class="rights-section"><b>✅ YOU HAVE THE RIGHT TO REMAIN SILENT (5th Amendment)</b><br>
+      Say: <i>“I wish to remain silent.”</i><br>
+      Do not answer questions about your birthplace, your legal status, or your country of origin.</div>
+      <div class="rights-section"><b>✅ YOU HAVE THE RIGHT TO REFUSE A SEARCH (4th Amendment)</b><br>
+      Do not consent to a search of your person, your home, or your belongings.<br>
+      Say: <i>“I do not consent to a search.”</i></div>
+      <div class="rights-section"><b>✅ YOU HAVE THE RIGHT TO SEE A WARRANT</b><br>
+      If ICE or police say they have a warrant, ask them to show it.<br>
+      Check for a judge’s signature and your correct name or address.</div>
+      <div class="rights-section"><b>✅ YOU HAVE THE RIGHT TO A LAWYER (6th Amendment)</b><br>
+      Say: <i>“I want a lawyer.”</i><br>
+      Do not sign anything without a lawyer’s counsel.</div>
+      <div class="rights-section">
+        <b>📁 FREE OR LOW-COST LEGAL HELP IN CALIFORNIA</b><ul>
+          <li><b>Immigration Law Collaborative (Southern California)</b><br>(213) 634-4249 — Free and low-cost representation.</li>
+          <li><b>Public Counsel</b><br>(213) 385-2977 — Serves Los Angeles and Orange County.</li>
+          <li><b>American Immigration Lawyers Association (AILA) Referral Service</b><br>(202) 507-7600 — Find a nearby pro bono lawyer.</li>
+          <li><b>California Rural Legal Assistance (CRLA)</b><br>(800) 242-2752 — Serves agricultural workers and low-income families.</li>
+        </ul>
+      </div>
+      <div class="rights-section">
+        <b>✨ Tip:</b> Always carry this card with you, remain calm, and be respectful.<br>Your rights apply even if you’re undocumented.
+      </div>
+    `,
+    rightsCardBtn: "📇 Know Your Rights",
   },
   es: {
     title: "Coca-Cola Polar Bear<br>Mapa Polar",
@@ -68,7 +96,35 @@ const translations = {
     copyCoordsFail: "No se pudieron copiar las coordenadas",
     geolocFail: "No se pudo obtener tu ubicación. Por favor permite el acceso.",
     geolocNotAvail: "Geolocalización no disponible en este dispositivo/navegador.",
-    weatherUnavailable: "Clima no disponible"
+    weatherUnavailable: "Clima no disponible",
+    rightsBtn: "📇 Conoce tus derechos",
+    rightsCard: `
+      <h2>📇 CONOCE TUS DERECHOS CONSTITUCIONALES</h2>
+      <div class="rights-section"><b>✅ TIENES DERECHO A GUARDAR SILENCIO (5ª Enmienda)</b><br>
+      Di: <i>“Deseo guardar silencio.”</i><br>
+      No respondas preguntas sobre tu lugar de nacimiento, tu estatus legal o tu país de origen.</div>
+      <div class="rights-section"><b>✅ TIENES DERECHO A RECHAZAR UNA BÚSQUEDA (4ª Enmienda)</b><br>
+      No des tu consentimiento para que te revisen a ti, tu casa o tus pertenencias.<br>
+      Di: <i>“No doy mi consentimiento para una búsqueda.”</i></div>
+      <div class="rights-section"><b>✅ TIENES DERECHO A VER UNA ORDEN JUDICIAL</b><br>
+      Si ICE o la policía dicen que tienen una orden, pídeles que te la muestren.<br>
+      Revisa que tenga la firma de un juez y que tu nombre o dirección estén correctos.</div>
+      <div class="rights-section"><b>✅ TIENES DERECHO A UN ABOGADO (6ª Enmienda)</b><br>
+      Di: <i>“Quiero un abogado.”</i><br>
+      No firmes nada sin el consejo de un abogado.</div>
+      <div class="rights-section">
+        <b>📁 AYUDA LEGAL GRATUITA O DE BAJO COSTO EN CALIFORNIA</b><ul>
+          <li><b>Immigration Law Collaborative (Sur de California)</b><br>(213) 634-4249 — Representación gratuita y de bajo costo.</li>
+          <li><b>Public Counsel</b><br>(213) 385-2977 — Sirve a Los Ángeles y el Condado de Orange.</li>
+          <li><b>American Immigration Lawyers Association (AILA) Servicio de Referencia</b><br>(202) 507-7600 — Encuentra un abogado pro bono cercano.</li>
+          <li><b>California Rural Legal Assistance (CRLA)</b><br>(800) 242-2752 — Sirve a trabajadores agrícolas y familias de bajos ingresos.</li>
+        </ul>
+      </div>
+      <div class="rights-section">
+        <b>✨ Consejo:</b> Lleva siempre esta tarjeta contigo, mantén la calma y sé respetuoso.<br>Tus derechos aplican incluso si no tienes documentos.
+      </div>
+    `,
+    rightsCardBtn: "📇 Conoce tus derechos",
   }
 };
 let currentLang = "en";
@@ -118,13 +174,17 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 // Rotatable marker icon using emoji
-function getRotatedIcon(type, rotationDeg = 0) {
+function getRotatedIcon(type, rotationDeg = 0, isPulse = false) {
   const emoji = (type === 'icecube')
     ? '🧊'
     : '🧊';
+  // If pulsing, wrap the marker with the pulsing HTML
+  const pulseHTML = isPulse
+    ? `<div class="pulse-red"><div class="pulse"></div><div class="dot"></div></div>`
+    : '';
   return L.divIcon({
     className: "",
-    html: `<div style="transform:rotate(${rotationDeg}deg);font-size:2.2em;line-height:1;width:38px;height:38px;display:flex;align-items:center;justify-content:center;">${emoji}</div>`,
+    html: `${pulseHTML}<div style="transform:rotate(${rotationDeg}deg);font-size:2.2em;line-height:1;width:38px;height:38px;display:flex;align-items:center;justify-content:center;position:relative;z-index:1;">${emoji}</div>`,
     iconSize: [38, 38],
     iconAnchor: [19, 38]
   });
@@ -143,6 +203,28 @@ const mainTitle = document.getElementById('main-title');
 const instructions = document.getElementById('instructions');
 const clearMarkersBtn = document.getElementById('clearMarkers');
 
+// --- RIGHTS CARD ---
+const rightsCardOverlay = document.getElementById('rightsCardOverlay');
+const rightsCardContent = document.getElementById('rightsCardContent');
+const rightsCardBtn = document.getElementById('showRightsCardBtn');
+const rightsCardClose = document.getElementById('closeRightsCardBtn');
+function updateRightsCard() {
+  rightsCardContent.innerHTML = translations[currentLang].rightsCard;
+  rightsCardBtn.textContent = translations[currentLang].rightsCardBtn + ' / ' + translations[currentLang === "en" ? "es" : "en"].rightsCardBtn;
+}
+rightsCardBtn.onclick = function() {
+  updateRightsCard();
+  rightsCardOverlay.classList.add('active');
+};
+rightsCardClose.onclick = function() {
+  rightsCardOverlay.classList.remove('active');
+};
+rightsCardOverlay.onclick = function(e) {
+  if (e.target === rightsCardOverlay) {
+    rightsCardOverlay.classList.remove('active');
+  }
+};
+
 // --- LANGUAGE SWITCH ---
 function setLanguage(lang) {
   currentLang = lang;
@@ -156,6 +238,7 @@ function setLanguage(lang) {
   cancelBtn.textContent = translations[lang].done;
   recenterBtn.title = translations[lang].recenterTitle;
   clearMarkersBtn.textContent = translations[lang].clearMarkers;
+  updateRightsCard();
   // Reload weather in new language (for "weather unavailable" fallback)
   fetchWeather(map.getCenter().lat, map.getCenter().lng);
   // Redraw all popups if open
@@ -308,10 +391,10 @@ function fmtDate(iso) {
   return d.toLocaleString(currentLang === "es" ? "es-MX" : undefined);
 }
 
-function addMarkerToMap(markerData, markerKey) {
+function addMarkerToMap(markerData, markerKey, isPulse = false) {
   let {lat, lng, type, description, user, heading, timestamp} = markerData;
   let rotation = typeof heading === 'number' ? heading : 0;
-  let icon = getRotatedIcon(type, rotation);
+  let icon = getRotatedIcon(type, rotation, isPulse);
   let tr = translations[currentLang];
   let label = type === 'icecube' ? tr.iceCube : tr.iceberg;
   let html = `<div id="popup-marker-${markerKey}">`;
@@ -403,13 +486,21 @@ function loadCheers(markerKey) {
 }
 
 // --- LISTEN TO MARKERS IN FIREBASE ---
+// Pulsing: highlight 5 most recent markers
 function listenToMarkers() {
   db.ref('markers').on('value', (snapshot) => {
     Object.values(markerLayers).forEach(marker => map.removeLayer(marker));
     markerLayers = {};
     const markers = snapshot.val() || {};
+    // Sort marker entries by timestamp desc, get 5 most recent keys
+    const sortedMarkerEntries = Object.entries(markers)
+      .filter(([k, m]) => m.timestamp)
+      .sort((a, b) => new Date(b[1].timestamp) - new Date(a[1].timestamp));
+    const pulseKeys = sortedMarkerEntries.slice(0, 5).map(([k, m]) => k);
+
     Object.entries(markers).forEach(([key, marker]) => {
-      markerLayers[key] = addMarkerToMap(marker, key);
+      const isPulse = pulseKeys.includes(key);
+      markerLayers[key] = addMarkerToMap(marker, key, isPulse);
     });
   });
 }
@@ -477,6 +568,7 @@ map.doubleClickZoom.enable();
 map.scrollWheelZoom.disable();
 map.on('dblclick', (e) => { e.originalEvent.preventDefault(); });
 
-// Initial language and weather
+// Initial language, rights card, and weather
 setLanguage(currentLang);
 fetchWeather(santaMariaCoords[0], santaMariaCoords[1]);
+updateRightsCard();

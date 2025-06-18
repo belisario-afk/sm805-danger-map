@@ -230,6 +230,125 @@ button.iceberg:hover {
   transform: scale(1.25);
 }
 
+/* Rights card overlay */
+.rights-card-overlay {
+  display: none;
+  position: fixed;
+  z-index: 9998;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(25, 37, 59, 0.70);
+  align-items: center;
+  justify-content: center;
+}
+.rights-card-overlay.active {
+  display: flex;
+}
+.rights-card {
+  background: #fff;
+  color: #1b253b;
+  border-radius: 16px;
+  max-width: 400px;
+  width: 90vw;
+  padding: 2.3em 1.4em 1.4em 1.4em;
+  box-shadow: 0 4px 32px 7px #1976d266, 0 2px 24px 10px #e41c2350;
+  position: relative;
+  text-align: left;
+  font-size: 1.02em;
+  font-family: inherit;
+}
+.rights-card h2 {
+  color: #e41c23;
+  margin-top: 0;
+  margin-bottom: 0.5em;
+  font-size: 1.25em;
+  letter-spacing: 0.03em;
+}
+.rights-card .rights-section {
+  margin-bottom: 1em;
+}
+.rights-card ul {
+  margin: 0.5em 0 0.5em 1.1em;
+  padding: 0;
+}
+.rights-card li {
+  margin-bottom: 0.55em;
+}
+.rights-card-close {
+  position: absolute;
+  right: 10px;
+  top: 12px;
+  background: none;
+  border: none;
+  font-size: 2em;
+  color: #e41c23;
+  cursor: pointer;
+  font-weight: bold;
+  line-height: 1;
+  z-index: 1;
+}
+.rights-card-open {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 10000;
+  background: #fff;
+  color: #e41c23;
+  border: 2px solid #e41c23;
+  border-radius: 30px;
+  box-shadow: 0 2px 18px #e41c2360;
+  padding: 0.7em 1.5em;
+  font-size: 1.18em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.rights-card-open:hover {
+  background: #e41c23;
+  color: #fff;
+}
+
+/* Pulsing red light for markers */
+.pulse-red {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  z-index: 2;
+}
+.pulse-red .dot {
+  width: 18px;
+  height: 18px;
+  background: #e41c23;
+  border-radius: 50%;
+  opacity: 0.78;
+  position: absolute;
+  left: 0;
+  top: 0;
+  box-shadow: 0 0 9px 4px #e41c238a;
+}
+.pulse-red .pulse {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  left: 0;
+  top: 0;
+  background: #e41c23;
+  opacity: 0.55;
+  animation: pulseRed 1.2s infinite;
+}
+@keyframes pulseRed {
+  0%   { transform: scale(1); opacity: 0.55; }
+  70%  { transform: scale(2.2); opacity: 0; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
 @media (max-width: 600px) {
   #map {
     height: 55vh;
@@ -244,5 +363,15 @@ button.iceberg:hover {
     top: 90px;
     width: 44px;
     height: 44px;
+  }
+  .rights-card {
+    padding: 1.38em 0.5em 1em 0.5em;
+    font-size: 0.97em;
+  }
+  .rights-card-open {
+    bottom: 8px;
+    right: 8px;
+    font-size: 1em;
+    padding: 0.6em 1em;
   }
 }
