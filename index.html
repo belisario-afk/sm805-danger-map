@@ -14,7 +14,7 @@
   <div class="polar-header">
     <img src="https://static.thenounproject.com/png/4419605-200.png" class="polar-bear" alt="Polar Bear" />
     <h1 id="main-title">Coca-Cola Polar Bear<br>Ice Map</h1>
-    <button id="langSwitchBtn" class="lang-switch">Español</button>
+    <select id="langSelect" class="lang-select" aria-label="Language"></select>
   </div>
   <div id="weatherBar" class="weather-bar">Loading weather...</div>
   <p id="instructions">
@@ -44,7 +44,7 @@
   <div id="rightsCardOverlay" class="rights-card-overlay">
     <div class="rights-card">
       <button id="closeRightsCardBtn" class="rights-card-close">&times;</button>
-      <div id="rightsCardContent"></div>
+      <div id="rightsCardContent" class="rights-card-content-scroll"></div>
     </div>
   </div>
   <button id="showRightsCardBtn" class="rights-card-open">

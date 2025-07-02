@@ -45,7 +45,7 @@ h1 {
   text-shadow: 0 1px 3px #1976d2;
 }
 
-.lang-switch {
+.lang-select {
   margin-top: 0.5em;
   margin-bottom: 0.3em;
   padding: 0.5em 1.3em;
@@ -59,9 +59,11 @@ h1 {
   box-shadow: 0 1px 6px #1b253b22;
   transition: background 0.2s, color 0.2s;
 }
-.lang-switch:hover {
-  background: #e41c23;
-  color: #fff;
+.lang-select:focus {
+  outline: 2px solid #51b8df;
+}
+.lang-select option {
+  color: #1b253b;
 }
 
 p {
@@ -258,7 +260,17 @@ button.iceberg:hover {
   text-align: left;
   font-size: 1.02em;
   font-family: inherit;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
 }
+.rights-card-content-scroll {
+  overflow-y: auto;
+  max-height: 56vh;
+  min-height: 120px;
+  padding-bottom: 0.7em;
+}
+
 .rights-card h2 {
   color: #e41c23;
   margin-top: 0;
@@ -367,6 +379,10 @@ button.iceberg:hover {
   .rights-card {
     padding: 1.38em 0.5em 1em 0.5em;
     font-size: 0.97em;
+    max-height: 92vh;
+  }
+  .rights-card-content-scroll {
+    max-height: 50vh;
   }
   .rights-card-open {
     bottom: 8px;
